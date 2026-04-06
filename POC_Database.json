@@ -1,0 +1,34 @@
+{
+  "public": {
+    "weather": {
+      "city": "Pune",
+      "temp_c": 28.3,
+      "desc": "Clear"
+    },
+    "prices": {
+      "BTC": {
+        "price_usd": 60000.12,
+        "last_update": "2025-09-16T12:00:00Z"
+      },
+      "ETH": {
+        "price_usd": 3500.5,
+        "last_update": "2025-09-16T12:00:00Z"
+      }
+    },
+    "aqi": {
+      "city": "Pune",
+      "value": 45,
+      "status": "Good"
+    }
+  },
+  "users": {
+    "UID12345": {
+      "portfolio_AES": "U2FsdGVkX19a3hJ4Nv9qkqvK2uF1zM3n",
+      "portfolio_DES": "QkNUSz0wLjI1LCBFVEg9MS41"
+    },
+    "UID67890": {
+      "portfolio_AES": "U2FsdGVkX1+9x1k7Tj4R2uNlmP4s3h8b",
+      "portfolio_DES": "QkNUSz0wLjUsIEVUSD0wLjg="
+    }
+  }
+}
