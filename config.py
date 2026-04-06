@@ -18,7 +18,7 @@ FIREBASE_URL = "https://micro-project-ee399-default-rtdb.firebaseio.com"
 # API Keys
 # -------------------
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY", "")
-GEMINI_API_KEY = "AIzaSyDWHcMIPxhU7Yj4SH_gHwfgn_bacneEyJo"
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 # -------------------
 # AES / DES Encryption Config
@@ -54,4 +54,6 @@ def validate_config():
     warnings = []
     if not WEATHER_API_KEY:
         warnings.append("WEATHER_API_KEY is not set. Weather data will be unavailable.")
+    if not GEMINI_API_KEY:
+        warnings.append("GEMINI_API_KEY is not set. AI Advisory features will be unavailable.")
     return warnings

@@ -130,7 +130,8 @@ with tab1:
 
     def fetch_weather(city):
         try:
-            url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API_KEY}&units=metric"
+            clean_key = WEATHER_API_KEY.strip()
+            url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={clean_key}&units=metric"
             res = requests.get(url, timeout=5)
             data = res.json()
             if res.status_code != 200:
@@ -337,6 +338,10 @@ with tab3:
 
                     if status == 200:
                         st.success("✅ Portfolio encrypted and stored to Firebase!")
+                        
+                        st.markdown("**🧠 AI Appended Strategy:**")
+                        st.info(portfolio_text_with_ai)
+
                         st.markdown("**Encrypted output (Base64):**")
                         st.code(encrypted_b64, language="text")
                         st.info(f"📍 Stored at: `/users/{rfid_uid}/portfolio_AES`")
