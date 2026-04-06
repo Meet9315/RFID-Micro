@@ -308,8 +308,25 @@ with tab3:
                 try:
                     aes_key = aes_key_input.encode('utf-8')
 
-                    # Encrypt
-                    encrypted_b64 = encrypt_portfolio_for_firebase(portfolio_text, aes_key)
+                    # 1. Fetch AI Strategy via Gemini Local Integration
+                    portfolio_text_with_ai = portfolio_text
+                    try:
+                        import google.generativeai as genai
+                        from config import GEMINI_API_KEY
+                        
+                        if GEMINI_API_KEY:
+                            genai.configure(api_key=GEMINI_API_KEY)
+                            model = genai.GenerativeModel('gemini-2.5-flash')
+                            
+                            prompt = f"Given this user portfolio: {portfolio_text}, provide a 14-character max actionable strategy. E.g. 'HOLD Mkt Volatile' or 'SELL BTC NOW'. Output nothing else."
+                            response = model.generate_content(prompt)
+                            ai_text = response.text.replace("\n", "").strip()[:15]
+                            portfolio_text_with_ai = f"{portfolio_text} | AI: {ai_text}"
+                    except Exception as e:
+                        st.warning(f"AI Advisor temporarily unavailable: {e}")
+
+                    # 2. Encrypt using AES
+                    encrypted_b64 = encrypt_portfolio_for_firebase(portfolio_text_with_ai, aes_key)
 
                     # Store to Firebase
                     data = {

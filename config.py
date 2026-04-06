@@ -18,6 +18,7 @@ FIREBASE_URL = "https://micro-project-ee399-default-rtdb.firebaseio.com"
 # API Keys
 # -------------------
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY", "")
+GEMINI_API_KEY = "AIzaSyDWHcMIPxhU7Yj4SH_gHwfgn_bacneEyJo"
 
 # -------------------
 # AES / DES Encryption Config
