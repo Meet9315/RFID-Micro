@@ -4,15 +4,15 @@
 #include <MFRC522.h>
 #include <LiquidCrystal_I2C.h>
 #include <mbedtls/aes.h>
+#include <mbedtls/base64.h>
 #include <ArduinoJson.h>
-#include "base64.h"
 
 // ==========================================
 // CONFIGURATION
 // ==========================================
-const char* WIFI_SSID = "YOUR_WIFI_SSID";
-const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
-const String FIREBASE_URL = "https://pocs-project-68633-default-rtdb.asia-southeast1.firebasedatabase.app";
+const char* WIFI_SSID = "Akshat";
+const char* WIFI_PASSWORD = "1234567890";
+const String FIREBASE_URL = "https://micro-project-ee399-default-rtdb.firebaseio.com";
 
 // 16-byte AES-128 Key (Must match the Python Dashboard Key)
 unsigned char aes_key[16] = {
@@ -47,10 +47,10 @@ void unpad_pkcs7(unsigned char* data, int* length) {
 }
 
 String decrypt_portfolio(String b64_ciphertext) {
-  // Decode Base64
-  int decoded_len = base64_dec_len((char*)b64_ciphertext.c_str(), b64_ciphertext.length());
-  unsigned char* decoded = (unsigned char*)malloc(decoded_len);
-  base64_decode((char*)decoded, (char*)b64_ciphertext.c_str(), b64_ciphertext.length());
+  // Decode Base64 using mbedtls
+  size_t decoded_len = 0;
+  unsigned char* decoded = (unsigned char*)malloc(b64_ciphertext.length());
+  mbedtls_base64_decode(decoded, b64_ciphertext.length(), &decoded_len, (const unsigned char*)b64_ciphertext.c_str(), b64_ciphertext.length());
 
   // Setup AES ECB Context
   mbedtls_aes_context aes;
@@ -165,19 +165,24 @@ void loop() {
         
         lcd.clear();
         lcd.setCursor(0, 0);
-        lcd.print("Access Granted");
-        lcd.setCursor(0, 1);
         lcd.print("--- Portfolio ---");
         
-        // Print portfolio text (chunked for LCD)
-        // E.g. "BTC: 0.5 ETH: 2.1"
-        lcd.setCursor(0, 2);
-        lcd.print(decrypted_data.substring(0, 20));
-        lcd.setCursor(0, 3);
-        lcd.print(decrypted_data.substring(20, 40));
+        // Paginate portfolio text safely on Row 1 (16 characters at a time)
+        int text_len = decrypted_data.length();
+        for (int i = 0; i < text_len; i += 16) {
+          lcd.setCursor(0, 1);
+          lcd.print("                "); // clear the row
+          lcd.setCursor(0, 1);
+          
+          int end_idx = i + 16;
+          if (end_idx > text_len) end_idx = text_len;
+          
+          lcd.print(decrypted_data.substring(i, end_idx));
+          delay(2500); // Wait 2.5 seconds per chunk before scrolling to the next
+        }
 
-        trigger_alert(); // Beep for success
-        delay(5000); // Display for 5 seconds
+        trigger_alert(); // Beep when finished
+        delay(1000);
       } else {
         lcd.clear();
         lcd.setCursor(0, 0);

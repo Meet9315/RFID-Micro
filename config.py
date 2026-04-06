@@ -12,7 +12,7 @@ load_dotenv()
 # -------------------
 # Firebase Configuration
 # -------------------
-FIREBASE_URL = "https://pocs-project-68633-default-rtdb.asia-southeast1.firebasedatabase.app"
+FIREBASE_URL = "https://micro-project-ee399-default-rtdb.firebaseio.com"
 
 # -------------------
 # API Keys
