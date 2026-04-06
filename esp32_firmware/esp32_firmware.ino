@@ -141,12 +141,13 @@ void NetworkTask(void *pvParameters) {
       }
     }
     
-    // Background Market Crash Polling (Every 10 secs)
+    // Background Market & Feed Polling (Every 10 secs)
     static unsigned long last_poll = 0;
     if (millis() - last_poll > 10000) {
       last_poll = millis();
       if (WiFi.status() == WL_CONNECTED) {
         HTTPClient http;
+        // 1. Check for Crash Alert
         http.begin(FIREBASE_URL + "/public/market_alert.json");
         if (http.GET() == 200) {
            DynamicJsonDocument doc(256);
@@ -154,6 +155,20 @@ void NetworkTask(void *pvParameters) {
            if (doc["market_crash"] == true) {
              char alertMsg[150] = "MARKET_CRASH_ALERT";
              xQueueSend(displayQueue, &alertMsg, 0);
+           }
+        }
+        http.end();
+
+        // 2. Fetch Idle Information Feed (Weather/Stock)
+        http.begin(FIREBASE_URL + "/public/idle_feed.json");
+        if (http.GET() == 200) {
+           DynamicJsonDocument doc(256);
+           deserializeJson(doc, http.getString());
+           if (doc.containsKey("feed")) {
+             String feedString = "FEED:" + doc["feed"].as<String>();
+             char feedMsg[150];
+             feedString.toCharArray(feedMsg, 150);
+             xQueueSend(displayQueue, &feedMsg, 0);
            }
         }
         http.end();
@@ -188,23 +203,47 @@ void HardwareTask(void *pvParameters) {
     lcd.setCursor(0, 0);
     lcd.print("Scan RFID Card...");
 
-    // 2. CHECK IF CORE 0 FINISHED DECRYPTING SOMETHING
+    // 2. CHECK IF CORE 0 PUSHED SOMETHING TO QUEUE
     char incomingDisplay[150];
     if (xQueueReceive(displayQueue, &incomingDisplay, 0) == pdPASS) {
       String display_text = String(incomingDisplay);
       
       lcd.clear();
-      if (display_text == "ERROR") {
-        lcd.print("HTTP Error"); delay(2000);
+      if (display_text.startsWith("FEED:")) {
+          // Display the idle kiosk feed
+          lcd.setCursor(0, 0);
+          lcd.print("- LIVE KIOSK --");
+          String feed_text = display_text.substring(5); // remove FEED:
+          
+          if (feed_text.length() <= 16) {
+             lcd.setCursor(0, 1);
+             lcd.print(feed_text);
+             vTaskDelay(3000 / portTICK_PERIOD_MS); // show feed for 3 secs
+          } else {
+             // paginated feed
+             for (int i = 0; i < feed_text.length(); i += 16) {
+                lcd.setCursor(0, 1);
+                lcd.print("                ");
+                lcd.setCursor(0, 1);
+                int end_idx = i + 16;
+                if (end_idx > feed_text.length()) end_idx = feed_text.length();
+                lcd.print(feed_text.substring(i, end_idx));
+                vTaskDelay(2500 / portTICK_PERIOD_MS);
+             }
+          }
+      } 
+      else if (display_text == "ERROR") {
+        lcd.print("HTTP Error"); vTaskDelay(2000 / portTICK_PERIOD_MS);
       } else if (display_text == "NO_DATA") {
-        lcd.print("No Portfolio Data"); delay(2000);
+        lcd.print("No Portfolio Data"); vTaskDelay(2000 / portTICK_PERIOD_MS);
       } else if (display_text == "MARKET_CRASH_ALERT") {
         lcd.print("! MARKET CRASH !");
         lcd.setCursor(0, 1);
         lcd.print("CHK DASHBOARD!!!");
         trigger_lockdown_siren();
-        delay(3000);
+        vTaskDelay(3000 / portTICK_PERIOD_MS);
       } else {
+        // Secure Portfolio Decryption Mode
         lcd.setCursor(0, 0);
         lcd.print("- AI Portfolio  -");
         
@@ -222,6 +261,8 @@ void HardwareTask(void *pvParameters) {
         trigger_alert();
       }
       lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Scan RFID Card...");
     }
 
     // 3. RFID SCANNER CHECK (WITH ANOMALY STATE MACHINE)
